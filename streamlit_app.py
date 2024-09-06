@@ -1,6 +1,6 @@
 from firebase import db
 import streamlit as st
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, date
 from subscription_functions import add_product, remove_product, check_subscription, update_subscription, extend_subscription, pull_data
 import json 
 import pandas as pd
@@ -79,9 +79,10 @@ with tab1:
     st.header("Update User Subscription")
     update_email = st.text_input("Email to Update Subscription")
     update_status = st.selectbox("Subscription Status", [True, False])
-
+    update_expiry = st.date_input("Subscription expiry", disabled=(not update_status), min_value=(datetime.today()))
+    
     if st.button("Update Subscription"):
-        result = update_subscription(update_email, update_status)
+        result = update_subscription(update_email, update_status, update_expiry if update_status else None)
 
         if result:
             st.success(

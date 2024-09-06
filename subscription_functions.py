@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from firebase import db
-
+from google.cloud import firestore as firestore_client
 
 
 def add_product(email, product):
@@ -76,7 +76,7 @@ def check_subscription(email):
         return False  
 
 
-def update_subscription(email, is_subscribed):
+def update_subscription(email, is_subscribed, subscription_expiry):
     """Update a user's subscription status."""
     users_ref = db.collection('produsers').where('email', '==', email)
     docs = users_ref.get()
@@ -92,10 +92,18 @@ def update_subscription(email, is_subscribed):
             formatted_updated_time = current_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
             try:
-                doc_ref.update({
+                # Create the update data dictionary
+                update_data = {
                     'isSubscribed': is_subscribed,
                     'updatedAt': formatted_updated_time
-                })
+                }
+
+                # Add subscriptionExpiry only if it's not None
+                if subscription_expiry is not None:
+                    update_data['subscriptionExpiry'] = subscription_expiry.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                # Update the document with the constructed dictionary
+                doc_ref.update(update_data)
+                              
                 print(f"Subscription status updated for user with email {email}.")
                 return True
             except Exception as e:
