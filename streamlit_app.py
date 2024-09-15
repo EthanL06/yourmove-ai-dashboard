@@ -76,19 +76,19 @@ with tab1:
         else:
             st.error(f"User '{check_email}' is Not Subscribed.")
 
-    st.header("Update User Subscription")
-    update_email = st.text_input("Email to Update Subscription")
-    update_status = st.selectbox("Subscription Status", [True, False])
-    update_expiry = st.date_input("Subscription expiry", disabled=(not update_status), min_value=(datetime.today()))
+    # st.header("Update User Subscription")
+    # update_email = st.text_input("Email to Update Subscription")
+    # update_status = st.selectbox("Subscription Status", [True, False])
+    # update_expiry = st.date_input("Subscription expiry", disabled=(not update_status), min_value=(datetime.today()))
     
-    if st.button("Update Subscription"):
-        result = update_subscription(update_email, update_status, update_expiry if update_status else None)
+    # if st.button("Update Subscription"):
+    #     result = update_subscription(update_email, update_status, update_expiry if update_status else None)
 
-        if result:
-            st.success(
-                f"User '{update_email}' subscription status updated to: {update_status}")
-        else:
-            st.error(f"User '{update_email}' not found.")
+    #     if result:
+    #         st.success(
+    #             f"User '{update_email}' subscription status updated to: {update_status}")
+    #     else:
+    #         st.error(f"User '{update_email}' not found.")
 
     st.header("Extend User Subscription")
     extend_email = st.text_input("Email to Extend Subscription")
