@@ -1,7 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from firebase import db
 from google.cloud import firestore as firestore_client
-
+from datetime import datetime, timedelta
 
 def add_product(email, product):
     """Add a product to the purchasedProducts collection."""
@@ -166,6 +166,58 @@ def extend_subscription(email, additional_time):
                     'message': f"Failed to extend subscription for user with email {email}. Error: {e}"
                 }
 
+
+def grant_subscription(email, access_time):
+    """Grant or extend a user's subscription."""
+    user_ref = db.collection('produsers').where('email', '==', email)
+    docs = user_ref.get()
+    
+    if not docs:
+        return {
+            'success': False,
+            'message': f"User with email {email} not found."
+        }
+    
+    for doc in docs:
+        if doc.exists:
+            doc_ref = db.collection('produsers').document(doc.id)
+            current_time = datetime.now(timezone.utc)
+            current_subscription_expiry = doc_ref.get().to_dict().get('subscriptionExpiry')
+
+            if current_subscription_expiry:
+                if isinstance(current_subscription_expiry, int):
+                    expiry_date = datetime.fromtimestamp(current_subscription_expiry / 1000, tz=timezone.utc)
+                else:
+                    expiry_date = current_subscription_expiry.replace(tzinfo=timezone.utc)
+                
+                if expiry_date > current_time:
+                    new_expiry_date = expiry_date + timedelta(days=access_time)
+                else:
+                    new_expiry_date = current_time + timedelta(days=access_time)
+            else:
+                new_expiry_date = current_time + timedelta(days=access_time)
+
+            try:
+                doc_ref.update({
+                    'isSubscribed': True,
+                    'subscriptionExpiry': new_expiry_date,
+                    'updatedAt': current_time.isoformat()
+                })
+                return {
+                    'success': True,
+                    'message': f"Subscription granted/extended for user with email {email}. New expiry date: {new_expiry_date.isoformat()}"
+                }
+            except Exception as e:
+                return {
+                    'success': False,
+                    'message': f"Failed to grant/extend subscription for user with email {email}. Error: {e}"
+                }
+
+    return {
+        'success': False,
+        'message': f"User with email {email} not found."
+    }
+    
 def pull_data(email):
     data = {
         'refreshes': [],
@@ -191,3 +243,49 @@ def pull_data(email):
     data['profileReviews'] = [doc.to_dict() for doc in profileReviews_query]
 
     return data
+
+def tag_creator_account(email):
+    """
+    Tag an account as a creator, grant a 365-day subscription, and set isCreator to True.
+    """
+    # First, grant a 365-day subscription
+    grant_result = grant_subscription(email, 365)
+    
+    if not grant_result['success']:
+        return grant_result  # Return the error if granting subscription failed
+    
+    # If subscription was granted successfully, update isCreator field
+    user_ref = db.collection('produsers').where('email', '==', email)
+    docs = user_ref.get()
+    
+    if not docs:
+        return {
+            'success': False,
+            'message': f"User with email {email} not found."
+        }
+    
+    for doc in docs:
+        if doc.exists:
+            doc_ref = db.collection('produsers').document(doc.id)
+            current_time = datetime.now(timezone.utc)
+            
+            try:
+                doc_ref.update({
+                    'isCreator': True,
+                    'updatedAt': current_time.isoformat()
+                })
+                return {
+                    'success': True,
+                    'message': f"Account {email} tagged as creator and granted 365-day subscription. {grant_result['message']}"
+                }
+            except Exception as e:
+                return {
+                    'success': False,
+                    'message': f"Failed to tag account {email} as creator. Subscription was granted but creator status update failed. Error: {e}"
+                }
+    
+    return {
+        'success': False,
+        'message': f"User with email {email} not found after granting subscription. This should not happen."
+    }
+

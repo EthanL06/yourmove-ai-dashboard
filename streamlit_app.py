@@ -1,7 +1,7 @@
 from firebase import db
 import streamlit as st
 from datetime import datetime, date
-from subscription_functions import add_product, remove_product, check_subscription, update_subscription, extend_subscription, pull_data
+from subscription_functions import add_product, remove_product, check_subscription, update_subscription, extend_subscription, pull_data, grant_subscription, tag_creator_account
 import json 
 import pandas as pd
 import hmac
@@ -93,10 +93,34 @@ with tab1:
     st.header("Extend User Subscription")
     extend_email = st.text_input("Email to Extend Subscription")
     additional_time = st.number_input(
-        "Additional Time (days)", min_value=1, max_value=365, step=1)
+        "Additional Time (days)", min_value=1, max_value=100000, step=1)
 
     if st.button("Extend Subscription"):
         result = extend_subscription(extend_email, additional_time)
+
+        if result['success']:
+            st.success(result['message'])
+        else:
+            st.error(result['message'])
+
+    st.header("Grant User Subscription")
+    grant_email = st.text_input("Email to Grant Subscription", key="grant_email")
+    grant_time = st.number_input(
+        "Access Time (days)", min_value=1, max_value=100000, step=1, key="grant_time")
+
+    if st.button("Grant Subscription"):
+        result = grant_subscription(grant_email, grant_time)
+
+        if result['success']:
+            st.success(result['message'])
+        else:
+            st.error(result['message'])
+
+    st.header("Tag Creator Account")
+    creator_email = st.text_input("Email to Tag as Creator", key="creator_email")
+
+    if st.button("Tag as Creator"):
+        result = tag_creator_account(creator_email)
 
         if result['success']:
             st.success(result['message'])
